@@ -1,0 +1,22 @@
+# ── web scraping ─────────────────────────────
+crawl4ai>=0.8.0          # fetch + clean + markdown, JS rendering via Playwright
+scrapling>=0.2.0         # DOM-resilient adaptive selector layer
+parsel>=1.9.0            # CSS + XPath fallback parser
+
+# ── LLM extraction ───────────────────────────
+openai>=1.30.0           # ChatGPT API for schema-aware extraction
+
+# ── validation ───────────────────────────────
+pydantic>=2.0.0          # output schema validation and type enforcement
+
+# ── config ───────────────────────────────────
+pyyaml>=6.0.0            # parse scraper_config.yaml
+
+# ── terminal UI ──────────────────────────────
+rich>=13.0.0             # progress bars, coloured output, summary table
+
+# ── storage ──────────────────────────────────
+aiosqlite>=0.20.0        # async SQLite writes
+
+# ── utilities ────────────────────────────────
+python-dotenv>=1.0.0     # load OPENAI_API_KEY from .env file
