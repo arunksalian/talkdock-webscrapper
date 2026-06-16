@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 import aiosqlite
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,8 +11,33 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _fix_blinkit_urls(records: list) -> list:
+    """
+    Blinkit product URLs follow the pattern:
+      https://blinkit.com/prn/<slug>/prid/<id>
+    If product_url is missing or just the domain, reconstruct it from prid.
+    """
+    for record in records:
+        url  = record.get("product_url") or ""
+        prid = record.get("prid")
+
+        # url is missing or just the bare domain
+        if prid and (not url or url.rstrip("/") == "https://blinkit.com"):
+            slug = re.sub(r"[^a-z0-9]+", "-", (record.get("product_name") or "product").lower()).strip("-")
+            record["product_url"] = f"https://blinkit.com/prn/{slug}/prid/{prid}"
+
+    return records
+
+
+def _postprocess(records: list, site: dict) -> list:
+    """Apply site-specific post-processing before saving."""
+    site_name = site.get("name", "")
+    if "blinkit" in site_name:
+        records = _fix_blinkit_urls(records)
+    return records
+
+
 def _envelope(records: list, site: dict) -> dict:
-    """Wrap records in the standard output envelope."""
     return {
         "site":       site["name"],
         "url":        site["url"],
@@ -22,25 +48,21 @@ def _envelope(records: list, site: dict) -> dict:
 
 
 async def save(records: list, site: dict, global_cfg: dict):
-    """
-    Persist extracted records to the configured output format.
-    Supports: json | csv | sqlite
-    """
     fmt        = global_cfg.get("output_format", "json")
     output_dir = Path(global_cfg.get("output_dir", "./output"))
     output_dir.mkdir(parents=True, exist_ok=True)
     name       = site["name"]
 
+    # post-process before saving
+    records = _postprocess(records, site)
+
     if fmt == "json":
         await _save_json(records, site, output_dir)
-
     elif fmt == "csv":
         await _save_csv(records, site, output_dir)
-
     elif fmt == "sqlite":
         db_path = output_dir / "scraper.db"
         await _save_sqlite(records, site, db_path)
-
     else:
         raise ValueError(f"unsupported output_format '{fmt}' — use json, csv, or sqlite")
 
@@ -68,8 +90,8 @@ async def _save_sqlite(records: list, site: dict, db_path: Path):
     if not records:
         return
 
-    table = site["name"].replace("-", "_")
-    cols  = list(records[0].keys())
+    table    = site["name"].replace("-", "_")
+    cols     = list(records[0].keys())
     col_defs = ", ".join(f'"{c}" TEXT' for c in cols)
 
     async with aiosqlite.connect(db_path) as db:
@@ -77,7 +99,7 @@ async def _save_sqlite(records: list, site: dict, db_path: Path):
             f'CREATE TABLE IF NOT EXISTS "{table}" '
             f'(id INTEGER PRIMARY KEY AUTOINCREMENT, scraped_at TEXT, {col_defs})'
         )
-        scraped_at = datetime.now(timezone.utc).isoformat()
+        scraped_at   = datetime.now(timezone.utc).isoformat()
         placeholders = ", ".join("?" for _ in cols)
         col_names    = ", ".join(f'"{c}"' for c in cols)
 

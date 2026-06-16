@@ -32,6 +32,7 @@ def _inject_query(sites: list, query: str) -> list:
         qs[param] = [query]
         site["url"] = urlunparse(parsed._replace(query=urlencode(qs, doseq=True)))
         site["name"] = f"{site['name']}-{query.replace(' ', '-')}"
+        site["_query"] = query
     return sites
 
 
@@ -52,7 +53,7 @@ async def scrape_site(site: dict, global_cfg: dict, progress, task_id) -> dict:
         markdown = await fetch(site)
 
         progress.update(task_id, description=f"[magenta]extracting[/] {name}")
-        records = await extract(markdown, site["schema"], name)
+        records = await extract(markdown, site["schema"], name, query=site.get("_query", ""))
 
         # filter by min reviews
         if min_reviews:
@@ -103,6 +104,8 @@ async def scrape_site(site: dict, global_cfg: dict, progress, task_id) -> dict:
         await save(records, site, global_cfg)
 
         result["records"] = len(records)
+        if len(records) == 0:
+            result["status"] = "not_found"
         logger.info(f"{name} → {len(records)} records saved")
 
     except Exception as e:
@@ -162,7 +165,12 @@ async def run(config_path: str, query: str = None):
     total_records = 0
     failed = 0
     for r in results:
-        status_fmt = "[green]ok[/]" if r["status"] == "success" else "[red]failed[/]"
+        if r["status"] == "success":
+            status_fmt = "[green]ok[/]"
+        elif r["status"] == "not_found":
+            status_fmt = "[yellow]not found[/]"
+        else:
+            status_fmt = "[red]failed[/]"
         table.add_row(r["site"], status_fmt, str(r["records"]), r["error"] or "")
         total_records += r["records"]
         if r["status"] == "failed":

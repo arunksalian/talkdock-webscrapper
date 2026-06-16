@@ -222,3 +222,59 @@ sites:
         description: full URL to the product page, must start with https://www.zeptonow.com
         type: string
         nullable: true
+
+  - name: blinkit
+    url: https://blinkit.com/s/
+    query_param: q
+    js_enabled: true
+    wait_for: networkidle
+    delay_seconds: 5
+    headers:
+      User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+      Accept-Language: "en-IN,en;q=0.9"
+      Cookie: "gr_1_lat=12.9716; gr_1_lng=77.5946; userLat=12.9716; userLng=77.5946"
+    reviews:
+      enabled: false
+      min_reviews: 0
+    schema:
+      product_name:
+        description: full product name or title
+        type: string
+      brand:
+        description: brand name of the product
+        type: string
+        nullable: true
+      quantity:
+        description: pack size or weight e.g. 500g, 1kg, 1L
+        type: string
+        nullable: true
+      mrp:
+        description: original MRP price as number, no currency symbol
+        type: float
+        nullable: true
+        example: 199.0
+      selling_price:
+        description: current selling price as number, no currency symbol
+        type: float
+        example: 149.0
+      discount_percent:
+        description: discount percentage shown, integer only
+        type: integer
+        nullable: true
+        example: 25
+      in_stock:
+        description: true if product is available to order
+        type: boolean
+      sku:
+        description: product SKU, item code, or product ID
+        type: string
+        nullable: true
+      prid:
+        description: Blinkit product ID number found in URLs like /prid/12345 or as a numeric ID in any link on the page
+        type: string
+        nullable: true
+        example: "491633"
+      product_url:
+        description: full product page URL containing /prn/ and /prid/ path segments e.g. https://blinkit.com/prn/product-name/prid/12345. If only prid is found, return null here.
+        type: string
+        nullable: true

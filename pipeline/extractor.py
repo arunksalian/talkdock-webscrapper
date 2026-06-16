@@ -32,14 +32,22 @@ def _schema_to_lines(schema: dict) -> str:
     return "\n".join(lines)
 
 
-def _build_search_prompt(schema: dict, markdown: str) -> str:
+def _build_search_prompt(schema: dict, query: str, markdown: str) -> str:
     return f"""You are a data extraction assistant. Extract structured data from the webpage content below.
 
-Return a JSON array of objects. Each object must have exactly these fields:
+The user searched for: "{query}"
+
+IMPORTANT — relevance check:
+- First check if the page contains products that match or are closely related to "{query}"
+- If the page shows "no results", "not found", "no products", or only shows completely unrelated products → return exactly: {{"not_found": true}}
+- If products are found but NONE are relevant to "{query}" → return exactly: {{"not_found": true}}
+- Only extract products that are genuinely relevant to the search query
+
+If relevant products exist, return a JSON array of objects. Each object must have exactly these fields:
 {_schema_to_lines(schema)}
 
 Rules:
-- Return ONLY a valid JSON array, no markdown, no explanation
+- Return ONLY a valid JSON array OR {{"not_found": true}}, no markdown, no explanation
 - Each item on the page = one object in the array
 - If a field is not found, return null
 - Strip currency symbols and commas from numeric fields
@@ -68,6 +76,22 @@ Product page content:
 """
 
 
+def _build_product_prompt(product_schema: dict, markdown: str) -> str:
+    return f"""You are a product detail extraction assistant. Extract product details from the page below.
+
+Return a single JSON object with exactly these fields:
+{_schema_to_lines(product_schema)}
+
+Rules:
+- Return ONLY a valid JSON object, no markdown, no explanation
+- If a field is not found, return null
+- For specifications, return a list of short strings like ["6GB RAM", "128GB Storage"]
+
+Product page content:
+{markdown[:12000]}
+"""
+
+
 async def _call_llm(prompt: str, label: str) -> list[dict]:
     """Call ChatGPT and return a parsed list of dicts."""
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -84,8 +108,13 @@ async def _call_llm(prompt: str, label: str) -> list[dict]:
                 temperature=0,
             )
 
-            raw = response.choices[0].message.content.strip()
+            raw    = response.choices[0].message.content.strip()
             parsed = json.loads(raw)
+
+            # ── not_found signal ─────────────────────────────────────────────
+            if isinstance(parsed, dict) and parsed.get("not_found"):
+                logger.info(f"[extract] {label} — product not found on this site")
+                return []
 
             if isinstance(parsed, dict):
                 records = next(
@@ -108,9 +137,9 @@ async def _call_llm(prompt: str, label: str) -> list[dict]:
     return []
 
 
-async def extract(markdown: str, schema: dict, site_name: str) -> list[dict]:
+async def extract(markdown: str, schema: dict, site_name: str, query: str = "") -> list[dict]:
     """Stage 1 — extract product listing records from search page markdown."""
-    prompt = _build_search_prompt(schema, markdown)
+    prompt = _build_search_prompt(schema, query, markdown)
     return await _call_llm(prompt, site_name)
 
 
@@ -118,22 +147,6 @@ async def extract_reviews(markdown: str, review_schema: dict, max_reviews: int, 
     """Stage 2 — extract review comments from product page markdown."""
     prompt = _build_review_prompt(review_schema, max_reviews, markdown)
     return await _call_llm(prompt, f"reviews:{product_name[:40]}")
-
-
-def _build_product_prompt(product_schema: dict, markdown: str) -> str:
-    return f"""You are a product detail extraction assistant. Extract product details from the page below.
-
-Return a single JSON object with exactly these fields:
-{_schema_to_lines(product_schema)}
-
-Rules:
-- Return ONLY a valid JSON object, no markdown, no explanation
-- If a field is not found, return null
-- For specifications, return a list of short strings like ["6GB RAM", "128GB Storage"]
-
-Product page content:
-{markdown[:12000]}
-"""
 
 
 async def extract_product_details(markdown: str, product_schema: dict, product_name: str) -> dict:
@@ -151,7 +164,7 @@ async def extract_product_details(markdown: str, product_schema: dict, product_n
             response_format={"type": "json_object"},
             temperature=0,
         )
-        raw = response.choices[0].message.content.strip()
+        raw    = response.choices[0].message.content.strip()
         result = json.loads(raw)
         logger.info(f"[product_details] {product_name[:40]} — sku: {result.get('sku')}")
         return result if isinstance(result, dict) else {}
