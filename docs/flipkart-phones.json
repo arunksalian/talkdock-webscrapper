@@ -1,0 +1,29 @@
+{
+  "site": "flipkart-phones",
+  "url": "https://flipkart.com/mobiles",
+  "scraped_at": "2025-06-16T10:32:11Z",
+  "total": 3,
+  "data": [
+    {
+      "name": "Samsung Galaxy S24 Ultra",
+      "price": 124999.0,
+      "rating": 4.5,
+      "reviews": 18234,
+      "in_stock": true
+    },
+    {
+      "name": "Apple iPhone 15 Pro Max",
+      "price": 159900.0,
+      "rating": 4.7,
+      "reviews": 42891,
+      "in_stock": true
+    },
+    {
+      "name": "OnePlus 12R",
+      "price": 39999.0,
+      "rating": 4.3,
+      "reviews": 9102,
+      "in_stock": false
+    }
+  ]
+}

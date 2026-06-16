@@ -1,0 +1,95 @@
+{
+  "global": {
+    "concurrency": 5,
+    "delay_seconds": 2,
+    "output_dir": "./output",
+    "output_format": "json",
+    "cache_enabled": true
+  },
+  "sites": [
+    {
+      "name": "flipkart-phones",
+      "url": "https://flipkart.com/mobiles",
+      "js_enabled": true,
+      "wait_for": "networkidle",
+      "schema": {
+        "name": {
+          "description": "product name",
+          "type": "string"
+        },
+        "price": {
+          "description": "price as a number, no currency symbol",
+          "type": "float",
+          "example": 14999.0
+        },
+        "rating": {
+          "description": "star rating out of 5",
+          "type": "float",
+          "example": 4.5
+        },
+        "reviews": {
+          "description": "number of reviews",
+          "type": "integer",
+          "example": 18234
+        },
+        "in_stock": {
+          "description": "true if available to buy",
+          "type": "boolean"
+        }
+      }
+    },
+    {
+      "name": "hindu-news",
+      "url": "https://thehindu.com/news",
+      "js_enabled": false,
+      "schema": {
+        "headline": {
+          "description": "article headline",
+          "type": "string"
+        },
+        "author": {
+          "description": "author name",
+          "type": "string",
+          "nullable": true
+        },
+        "published_at": {
+          "description": "publish date",
+          "type": "string",
+          "format": "ISO 8601"
+        },
+        "summary": {
+          "description": "brief summary of the article",
+          "type": "string"
+        }
+      }
+    },
+    {
+      "name": "linkedin-jobs",
+      "url": "https://linkedin.com/jobs/search",
+      "js_enabled": true,
+      "wait_for": ".jobs-search-results",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      },
+      "schema": {
+        "title": {
+          "description": "job title",
+          "type": "string"
+        },
+        "company": {
+          "description": "company name",
+          "type": "string"
+        },
+        "location": {
+          "description": "job location",
+          "type": "string"
+        },
+        "posted": {
+          "description": "when the job was posted",
+          "type": "string",
+          "example": "2 days ago"
+        }
+      }
+    }
+  ]
+}
