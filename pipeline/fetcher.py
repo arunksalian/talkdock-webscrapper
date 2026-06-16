@@ -105,15 +105,13 @@ async def _camoufox_fetch(url: str, label: str) -> str:
         if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
             raise RuntimeError("camoufox: content too short")
 
-        # strip HTML tags to get readable text for LLM
-        from crawl4ai import AsyncWebCrawler
-        # use crawl4ai's markdown converter on the raw HTML
-        from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
-        generator = DefaultMarkdownGenerator()
-        markdown = generator.generate_markdown(
-            cleaned_html=content,
-            base_url=url,
-        ).raw_markdown
+        # convert HTML → plain text using html2text (no crawl4ai internals)
+        import html2text
+        h = html2text.HTML2Text()
+        h.ignore_links    = False
+        h.ignore_images   = True
+        h.body_width      = 0       # no line wrapping
+        markdown = h.handle(content)
 
         if not markdown or len(markdown.strip()) < MIN_CONTENT_LENGTH:
             raise RuntimeError("camoufox: markdown conversion produced empty output")
