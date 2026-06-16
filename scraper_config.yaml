@@ -18,8 +18,8 @@ sites:
     wait_for: networkidle
     reviews:
       enabled: true
-      max_reviews: 5             # reviews to extract per product
-      min_reviews: 10            # skip products with fewer than 10 reviews
+      max_reviews: 5
+      min_reviews: 10
     schema:
       product_url:
         description: full URL to the product page, must start with https://www.flipkart.com
@@ -76,10 +76,11 @@ sites:
     query_param: k
     js_enabled: true
     wait_for: networkidle
-    delay_seconds: 5
+    delay_seconds: 8
     headers:
       User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
       Accept-Language: "en-IN,en;q=0.9"
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     reviews:
       enabled: true
       max_reviews: 5
@@ -137,15 +138,16 @@ sites:
 
   - name: zepto
     url: https://www.zeptonow.com/search
-    query_param: query             # ?query=...
+    query_param: query
     js_enabled: true
     wait_for: networkidle
     delay_seconds: 5
     headers:
       User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
       Accept-Language: "en-IN,en;q=0.9"
+      Cookie: "userSelectedPincode=600001; userCity=Chennai"
     reviews:
-      enabled: false               # Zepto has no user reviews — it's a grocery app
+      enabled: false
     schema:
       product_name:
         description: full product name or title
