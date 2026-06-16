@@ -1,0 +1,181 @@
+# ── global settings ───────────────────────────────────────────────────────────
+global:
+  concurrency: 2
+  delay_seconds: 3
+  output_dir: ./output
+  output_format: json
+  cache_enabled: false
+  cache_ttl_minutes: 60
+  model: gpt-4o-mini
+
+# ── sites to scrape ───────────────────────────────────────────────────────────
+sites:
+
+  - name: flipkart
+    url: https://www.flipkart.com/search
+    query_param: q
+    js_enabled: true
+    wait_for: networkidle
+    reviews:
+      enabled: true
+      max_reviews: 5             # reviews to extract per product
+      min_reviews: 10            # skip products with fewer than 10 reviews
+    schema:
+      product_url:
+        description: full URL to the product page, must start with https://www.flipkart.com
+        type: string
+        nullable: true
+      product_name:
+        description: full product name
+        type: string
+      mrp:
+        description: original MRP crossed-out price, number only
+        type: float
+        nullable: true
+      selling_price:
+        description: current selling price, number only
+        type: float
+      discount_percent:
+        description: discount percentage shown, integer only
+        type: integer
+        nullable: true
+      rating:
+        description: star rating out of 5
+        type: float
+        nullable: true
+      reviews_count:
+        description: total number of ratings. Only include products with at least 10 reviews.
+        type: integer
+        nullable: true
+      in_stock:
+        description: true if available to buy
+        type: boolean
+    review_schema:
+      reviewer:
+        description: reviewer name or username
+        type: string
+        nullable: true
+      rating:
+        description: star rating given by reviewer out of 5
+        type: float
+        nullable: true
+      date:
+        description: review date in ISO 8601 format
+        type: string
+        nullable: true
+      title:
+        description: review headline or title
+        type: string
+        nullable: true
+      comment:
+        description: full review text or comment body
+        type: string
+
+  - name: amazon
+    url: https://www.amazon.in/s
+    query_param: k
+    js_enabled: true
+    wait_for: networkidle
+    delay_seconds: 5
+    headers:
+      User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+      Accept-Language: "en-IN,en;q=0.9"
+    reviews:
+      enabled: true
+      max_reviews: 5
+      min_reviews: 10
+    schema:
+      product_url:
+        description: full URL to the product page, must start with https://www.amazon.in
+        type: string
+        nullable: true
+      product_name:
+        description: full product name or title
+        type: string
+      mrp:
+        description: original crossed-out MRP price, number only
+        type: float
+        nullable: true
+      selling_price:
+        description: current selling price, number only
+        type: float
+      discount_percent:
+        description: discount percentage shown, integer only
+        type: integer
+        nullable: true
+      rating:
+        description: average star rating out of 5
+        type: float
+        nullable: true
+      reviews_count:
+        description: total number of customer ratings. Only include products with at least 10 reviews.
+        type: integer
+        nullable: true
+      sponsored:
+        description: true if listing is marked as Sponsored
+        type: boolean
+    review_schema:
+      reviewer:
+        description: reviewer name or username
+        type: string
+        nullable: true
+      rating:
+        description: star rating given by reviewer out of 5
+        type: float
+        nullable: true
+      date:
+        description: review date in ISO 8601 format
+        type: string
+        nullable: true
+      title:
+        description: review headline or title
+        type: string
+        nullable: true
+      comment:
+        description: full review text or comment body
+        type: string
+
+  - name: zepto
+    url: https://www.zeptonow.com/search
+    query_param: query             # ?query=...
+    js_enabled: true
+    wait_for: networkidle
+    delay_seconds: 5
+    headers:
+      User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+      Accept-Language: "en-IN,en;q=0.9"
+    reviews:
+      enabled: false               # Zepto has no user reviews — it's a grocery app
+    schema:
+      product_name:
+        description: full product name or title
+        type: string
+      brand:
+        description: brand name of the product
+        type: string
+        nullable: true
+      quantity:
+        description: pack size or weight e.g. 500g, 1kg, 1L
+        type: string
+        nullable: true
+      mrp:
+        description: original MRP price as number, no currency symbol
+        type: float
+        nullable: true
+        example: 199.0
+      selling_price:
+        description: current selling price as number, no currency symbol
+        type: float
+        example: 149.0
+      discount_percent:
+        description: discount percentage shown, integer only
+        type: integer
+        nullable: true
+        example: 25
+      in_stock:
+        description: true if product is available to order
+        type: boolean
+      product_url:
+        description: full URL to the product page, must start with https://www.zeptonow.com
+        type: string
+        nullable: true
