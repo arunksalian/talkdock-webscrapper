@@ -13,7 +13,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from pipeline.config_loader import load_config
 from pipeline.fetcher import fetch, fetch_product_page
-from pipeline.extractor import extract, extract_reviews
+from pipeline.extractor import extract, extract_reviews, extract_product_details
 from pipeline.storage import save
 from utils.logger import get_logger
 
@@ -39,14 +39,15 @@ async def scrape_site(site: dict, global_cfg: dict, progress, task_id) -> dict:
     name = site["name"]
     result = {"site": name, "status": "success", "records": 0, "error": None}
 
-    reviews_cfg    = site.get("reviews", {})
-    reviews_on     = reviews_cfg.get("enabled", False)
-    max_reviews    = reviews_cfg.get("max_reviews", 5)
-    min_reviews    = reviews_cfg.get("min_reviews", 0)
-    review_schema  = site.get("review_schema", {})
+    reviews_cfg   = site.get("reviews", {})
+    reviews_on    = reviews_cfg.get("enabled", False)
+    max_reviews   = reviews_cfg.get("max_reviews", 5)
+    min_reviews   = reviews_cfg.get("min_reviews", 0)
+    review_schema = site.get("review_schema", {})
+    product_schema = site.get("product_schema", {})
 
     try:
-        # ── stage 1: fetch + extract search results ───────────────────────────
+        # ── stage 1: fetch + extract search listing ───────────────────────────
         progress.update(task_id, description=f"[cyan]fetching[/]   {name}")
         markdown = await fetch(site)
 
@@ -62,30 +63,40 @@ async def scrape_site(site: dict, global_cfg: dict, progress, task_id) -> dict:
             ]
             logger.info(f"[filter] {name} — {before} → {len(records)} records (min {min_reviews} reviews)")
 
-        # ── stage 2: fetch reviews per product ───────────────────────────────
-        if reviews_on and review_schema:
-            progress.update(task_id, description=f"[yellow]reviews[/]    {name}")
+        # ── stage 2: visit product page for SKU + reviews ─────────────────────
+        if (reviews_on or product_schema) and records:
+            progress.update(task_id, description=f"[yellow]enriching[/]  {name}")
             delay = site.get("delay_seconds", global_cfg.get("delay_seconds", 2))
 
             for i, record in enumerate(records):
-                product_url = record.get("product_url")
+                product_url  = record.get("product_url")
                 product_name = record.get("product_name", f"product_{i}")
 
                 if not product_url:
-                    logger.warning(f"[reviews] skipping '{product_name}' — no product_url")
-                    record["reviews"] = []
+                    logger.warning(f"[enrich] skipping '{product_name}' — no product_url")
+                    if reviews_on:
+                        record["reviews"] = []
                     continue
 
                 try:
-                    await asyncio.sleep(delay)    # be polite between product page hits
+                    await asyncio.sleep(delay)
                     product_md = await fetch_product_page(product_url, site)
-                    reviews = await extract_reviews(product_md, review_schema, max_reviews, product_name)
-                    record["reviews"] = reviews
-                    logger.info(f"[reviews] {product_name[:40]} — {len(reviews)} reviews")
+
+                    # extract SKU + product details
+                    if product_schema:
+                        details = await extract_product_details(product_md, product_schema, product_name)
+                        record.update(details)   # merge sku, brand, description, specs into record
+
+                    # extract reviews
+                    if reviews_on and review_schema:
+                        reviews = await extract_reviews(product_md, review_schema, max_reviews, product_name)
+                        record["reviews"] = reviews
+                        logger.info(f"[reviews] {product_name[:40]} — {len(reviews)} reviews")
 
                 except Exception as e:
-                    logger.warning(f"[reviews] failed for '{product_name}': {e}")
-                    record["reviews"] = []
+                    logger.warning(f"[enrich] failed for '{product_name}': {e}")
+                    if reviews_on:
+                        record["reviews"] = []
 
         # ── stage 3: save ─────────────────────────────────────────────────────
         progress.update(task_id, description=f"[green]saving[/]     {name}")
@@ -121,7 +132,7 @@ async def run(config_path: str, query: str = None):
     console.print(f"  format   : [cyan]{global_cfg.get('output_format', 'json')}[/]")
     console.print()
 
-    semaphore = asyncio.Semaphore(global_cfg.get("concurrency", 5))
+    semaphore  = asyncio.Semaphore(global_cfg.get("concurrency", 5))
     start_time = datetime.now(timezone.utc)
 
     async def bounded_scrape(site, progress, task_id):

@@ -118,3 +118,43 @@ async def extract_reviews(markdown: str, review_schema: dict, max_reviews: int, 
     """Stage 2 — extract review comments from product page markdown."""
     prompt = _build_review_prompt(review_schema, max_reviews, markdown)
     return await _call_llm(prompt, f"reviews:{product_name[:40]}")
+
+
+def _build_product_prompt(product_schema: dict, markdown: str) -> str:
+    return f"""You are a product detail extraction assistant. Extract product details from the page below.
+
+Return a single JSON object with exactly these fields:
+{_schema_to_lines(product_schema)}
+
+Rules:
+- Return ONLY a valid JSON object, no markdown, no explanation
+- If a field is not found, return null
+- For specifications, return a list of short strings like ["6GB RAM", "128GB Storage"]
+
+Product page content:
+{markdown[:12000]}
+"""
+
+
+async def extract_product_details(markdown: str, product_schema: dict, product_name: str) -> dict:
+    """Extract SKU and other product details from product page markdown."""
+    prompt = _build_product_prompt(product_schema, markdown)
+    model  = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    try:
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a precise data extraction assistant. Always respond with valid JSON only."},
+                {"role": "user",   "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0,
+        )
+        raw = response.choices[0].message.content.strip()
+        result = json.loads(raw)
+        logger.info(f"[product_details] {product_name[:40]} — sku: {result.get('sku')}")
+        return result if isinstance(result, dict) else {}
+    except Exception as e:
+        logger.warning(f"[product_details] failed for {product_name}: {e}")
+        return {}

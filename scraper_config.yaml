@@ -19,7 +19,7 @@ sites:
     reviews:
       enabled: true
       max_reviews: 5
-      min_reviews: 10            # flipkart has reviews — filter applies
+      min_reviews: 10
     schema:
       product_url:
         description: full URL to the product page, must start with https://www.flipkart.com
@@ -50,6 +50,24 @@ sites:
       in_stock:
         description: true if available to buy
         type: boolean
+    product_schema:
+      sku:
+        description: SKU, model number, or product ID shown on the product page
+        type: string
+        nullable: true
+        example: "moto-g57-128gb-blue"
+      brand:
+        description: brand or manufacturer name
+        type: string
+        nullable: true
+      description:
+        description: full product description or about this item section
+        type: string
+        nullable: true
+      specifications:
+        description: key technical specs as a list of strings e.g. ["6GB RAM", "128GB Storage"]
+        type: list[string]
+        nullable: true
     review_schema:
       reviewer:
         description: reviewer name or username
@@ -84,7 +102,7 @@ sites:
     reviews:
       enabled: true
       max_reviews: 5
-      min_reviews: 0             # set to 0 — amazon anti-bot often strips review counts
+      min_reviews: 0
     schema:
       product_url:
         description: full URL to the product page, must start with https://www.amazon.in
@@ -115,6 +133,24 @@ sites:
       sponsored:
         description: true if listing is marked as Sponsored
         type: boolean
+    product_schema:
+      sku:
+        description: ASIN, model number, or SKU shown on the product page
+        type: string
+        nullable: true
+        example: "B0CHX3QBCH"
+      brand:
+        description: brand or manufacturer name
+        type: string
+        nullable: true
+      description:
+        description: full product description or about this item section
+        type: string
+        nullable: true
+      specifications:
+        description: key technical specs as a list of strings e.g. ["6GB RAM", "128GB Storage"]
+        type: list[string]
+        nullable: true
     review_schema:
       reviewer:
         description: reviewer name or username
@@ -148,7 +184,7 @@ sites:
       Cookie: "userSelectedPincode=600001; userCity=Chennai"
     reviews:
       enabled: false
-      min_reviews: 0             # zepto has no reviews — filter disabled
+      min_reviews: 0
     schema:
       product_name:
         description: full product name or title
@@ -178,6 +214,10 @@ sites:
       in_stock:
         description: true if product is available to order
         type: boolean
+      sku:
+        description: product SKU, item code, or product ID shown on the page
+        type: string
+        nullable: true
       product_url:
         description: full URL to the product page, must start with https://www.zeptonow.com
         type: string
