@@ -20,3 +20,6 @@ aiosqlite>=0.20.0        # async SQLite writes
 
 # ── utilities ────────────────────────────────
 python-dotenv>=1.0.0     # load OPENAI_API_KEY from .env file
+
+# ── stealth browser fallback ──────────────────────────────────────────────────
+camoufox[geoip]>=0.4.0       # Firefox-based stealth browser, fallback for bot-protected sites

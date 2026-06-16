@@ -19,7 +19,7 @@ sites:
     reviews:
       enabled: true
       max_reviews: 5
-      min_reviews: 10
+      min_reviews: 10            # flipkart has reviews — filter applies
     schema:
       product_url:
         description: full URL to the product page, must start with https://www.flipkart.com
@@ -84,7 +84,7 @@ sites:
     reviews:
       enabled: true
       max_reviews: 5
-      min_reviews: 10
+      min_reviews: 0             # set to 0 — amazon anti-bot often strips review counts
     schema:
       product_url:
         description: full URL to the product page, must start with https://www.amazon.in
@@ -109,7 +109,7 @@ sites:
         type: float
         nullable: true
       reviews_count:
-        description: total number of customer ratings. Only include products with at least 10 reviews.
+        description: total number of customer ratings, number only
         type: integer
         nullable: true
       sponsored:
@@ -148,6 +148,7 @@ sites:
       Cookie: "userSelectedPincode=600001; userCity=Chennai"
     reviews:
       enabled: false
+      min_reviews: 0             # zepto has no reviews — filter disabled
     schema:
       product_name:
         description: full product name or title

@@ -42,7 +42,7 @@ async def scrape_site(site: dict, global_cfg: dict, progress, task_id) -> dict:
     reviews_cfg    = site.get("reviews", {})
     reviews_on     = reviews_cfg.get("enabled", False)
     max_reviews    = reviews_cfg.get("max_reviews", 5)
-    min_reviews    = reviews_cfg.get("min_reviews", 10)
+    min_reviews    = reviews_cfg.get("min_reviews", 0)
     review_schema  = site.get("review_schema", {})
 
     try:
